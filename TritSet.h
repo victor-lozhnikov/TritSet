@@ -1,18 +1,33 @@
 #ifndef TRITSET_TRITSET_H
 #define TRITSET_TRITSET_H
 
-#include <set>
+#include <vector>
+#include "Trit.h"
 
 class TritSet {
+public:
+    explicit TritSet (int _size);
+    ~TritSet();
+    int capacity();
+
+    class ProxyTritSet {
     public:
-        TritSet (int set_size) {
-            size = set_size;
+        TritSet &set;
+        int index;
+        ProxyTritSet(TritSet *_set, int _index);
+        ProxyTritSet &operator= (Trit val);
+        //friend std::ostream& TritSet::ProxyTritSet::operator<<(std::ostream& os, const ProxyTritSet &prx);
+        //bool operator== (ProxyTritSet a);
+        //bool operator== (Trit a);
+    };
 
-        }
+    ProxyTritSet operator[] (int _index);
 
-    private:
-        int size;
-        std::set <std::pair<int, bool>> pair_set;
+private:
+    std::vector <uint> *vec;
+    int size;
+    Trit getValue (int index);
+    void setValue (int index, Trit val);
 };
 
 
