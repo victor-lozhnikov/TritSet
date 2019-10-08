@@ -25,11 +25,41 @@ Trit TritSet::getValue(int index) {
     int pos2 = index % (4 * sizeof(uint));
 
     uint tmp = (*vec)[pos1];
-    for (int i = 0; i < pos2; i+= 2)
+    tmp >>= 2 * pos2;
+    tmp &= 3;
+    switch (tmp) {
+        case 0:
+            return False;
+        case 3:
+            return True;
+        default:
+            return Unknown;
+    }
 }
 
 void TritSet::setValue(int index, Trit val) {
+    int pos1 = index / (4 * sizeof(uint));
+    int pos2 = index % (4 * sizeof(uint));
 
+    uint tmp1, tmp2;
+    tmp1 = 3;
+    switch (val) {
+        case False:
+            tmp2 = 0;
+            break;
+        case True:
+            tmp2 = 3;
+            break;
+        default:
+            tmp2 = 2;
+            break;
+    }
+
+    tmp1 <<= 2 * pos2;
+    tmp2 <<= 2 * pos2;
+    tmp1 = ~tmp1;
+    (*vec)[pos1] &= tmp1;
+    (*vec)[pos1] |= tmp2;
 }
 
 TritSet::ProxyTritSet::ProxyTritSet(TritSet *_set, int _index) : set(*_set), index(_index) {}
@@ -39,42 +69,29 @@ TritSet::ProxyTritSet &TritSet::ProxyTritSet::operator=(Trit val) {
         set.setValue(index, val);
     }
     else if (val != Unknown) {
-        set.vec->resize(ceil((double)(index + 1) / (4 * sizeof(uint))));
+        set.vec->resize(ceil((double)(index + 1) / (4 * sizeof(uint))), 0);
         set.size = index + 1;
         set.setValue(index, val);
     }
 }
 
-/*std::ostream& TritSet::ProxyTritSet::operator<<(std::ostream &os, ProxyTritSet &prx) {
-    switch (set.uMap[index]) {
-        case Trit::False:
-            os << "False";
-            break;
-        case Trit::True:
-            os << "True";
-            break;
-        default:
-            os << "Unknown";
-            break;
-    }
-    return os;
-}*/
+//std::ostream& TritSet::ProxyTritSet::operator<<(std::ostream &os, ProxyTritSet &prx)
 
-/*bool TritSet::ProxyTritSet::operator==(TritSet::ProxyTritSet a) {
+bool TritSet::ProxyTritSet::operator==(TritSet::ProxyTritSet a) {
     if (index < set.capacity() && a.index < a.set.capacity()) {
-        return (set.uMap[index] == a.set.uMap[a.index]);
+        return (set.getValue(index) == a.set.getValue(a.index));
     }
-    else if (index >= set.capacity() && a.set.uMap[a.index] == Unknown) {
+    else if (index >= set.capacity() && a.set.getValue(a.index) == Unknown) {
         return true;
     }
-    else if (a.index >= a.set.capacity() && set.uMap[index] == Unknown) {
+    else if (a.index >= a.set.capacity() && set.getValue(index) == Unknown) {
         return true;
     }
     return false;
 }
 
 bool TritSet::ProxyTritSet::operator==(Trit a) {
-    if (index > set.capacity()) {
+    if (index > set.size) {
         if (a == Unknown) {
             return true;
         }
@@ -82,8 +99,8 @@ bool TritSet::ProxyTritSet::operator==(Trit a) {
             return false;
         }
     }
-    return (set.uMap[index] == a);
-}*/
+    return (set.getValue(index) == a);
+}
 
 
 TritSet::ProxyTritSet TritSet::operator[] (int index) {
