@@ -15,7 +15,6 @@ std::ostream& operator<<(std::ostream& os, const Trit &trit) {
     return os;
 }
 
-
 Trit operator~ (Trit a) {
     switch (a) {
         case True:

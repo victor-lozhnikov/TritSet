@@ -12,43 +12,30 @@ TritSet::TritSet (int _size) {
     vec = new std::vector <uint> (ceil((double)_size / (4 * sizeof(uint))), 0);
     size = _size;
     first_size = vec->size();
+    trueCount = 0;
+    falseCount = 0;
 }
+
 
 TritSet::~TritSet() {
     delete vec;
 }
 
-int TritSet::capacity() const {
+
+size_t TritSet::capacity() const {
     return vec->capacity();
 }
 
-int TritSet::getSize() const {
+
+size_t TritSet::getSize() const {
     return size;
 }
 
-uint TritSet::at (int index) const {
-    return vec->at(index);
+
+size_t TritSet::getVecSize() const {
+    return vec->size();
 }
 
-void TritSet::shrink() {
-    int new_size = first_size;
-    for (int k = vec->size() - 1; k > first_size; --k) {
-        if (vec->at(k) > 0) {
-            new_size = k + 1;
-            break;
-        }
-    }
-    vec->resize(new_size);
-
-    int first_i = 4 * sizeof(uint) * (new_size - 1);
-    int last_i = 4 * sizeof(uint) * new_size;
-    for (int i = first_i; i < last_i; ++i) {
-        if (!(getValue(i) == Unknown)) {
-            size = i + 1;
-        }
-    }
-    vec->shrink_to_fit();
-}
 
 Trit TritSet::getValue(int index) const {
     if (index >= size) {
@@ -70,7 +57,117 @@ Trit TritSet::getValue(int index) const {
     }
 }
 
+
+uint TritSet::at (int index) const {
+    if (index >= vec->size()) {
+        return 0;
+    }
+    return vec->at(index);
+}
+
+
+void TritSet::shrink() {
+    int new_size = first_size;
+    for (int k = vec->size() - 1; k > first_size; --k) {
+        if (vec->at(k) > 0) {
+            new_size = k + 1;
+            break;
+        }
+    }
+    vec->resize(new_size);
+
+    int first_i = 4 * sizeof(uint) * (new_size - 1);
+    int last_i = 4 * sizeof(uint) * new_size;
+    for (int i = first_i; i < last_i; ++i) {
+        if (!(getValue(i) == Unknown)) {
+            size = i + 1;
+        }
+    }
+    vec->shrink_to_fit();
+}
+
+
+size_t TritSet::cardinality (Trit val) const {
+    switch (val) {
+        case True:
+            return trueCount;
+        case False:
+            return falseCount;
+        default:
+            return (size - trueCount - falseCount);
+    }
+}
+
+
+std::unordered_map <Trit, int, std::hash<int>> TritSet::cardinality() {
+    std::unordered_map <Trit, int, std::hash<int>> res;
+    res[True] = cardinality(True);
+    res[False] = cardinality(False);
+    res[Unknown] = cardinality(Unknown);
+    return res;
+}
+
+
+void TritSet::trim(size_t lastIndex) {
+    if (lastIndex >= size) {
+        return;
+    }
+    int new_size = ceil((double)lastIndex / (4 * sizeof(uint)));
+    int pos1 = new_size * 4 * sizeof(uint);
+
+    for (int i = lastIndex; i < pos1; ++i) {
+        setValue(i, Unknown);
+    }
+    vec->resize(new_size);
+    size = lastIndex + 1;
+    vec->shrink_to_fit();
+}
+
+size_t TritSet::length() {
+    int last_ind = -1;
+    for (int i = getVecSize() - 1; i >= 0; --i) {
+        if (vec->at(i) != 0) {
+            last_ind = i;
+            break;
+        }
+    }
+    if (last_ind == -1) {
+        return 0;
+    }
+
+    int first_i = 4 * sizeof(uint) * last_ind;
+    int last_i = 4 * sizeof(uint) * (last_ind + 1);
+
+    for (int i = last_i + 1; i >= first_i; --i) {
+        if (getValue(i) != Unknown) {
+            return i + 1;
+        }
+    }
+}
+
 void TritSet::setValue(int index, Trit val) {
+    switch (getValue(index)) {
+        case True:
+            trueCount--;
+            break;
+        case False:
+            falseCount--;
+            break;
+        default:
+            break;
+    }
+
+    switch (val) {
+        case True:
+            trueCount++;
+            break;
+        case False:
+            falseCount++;
+            break;
+        default:
+            break;
+    }
+
     int pos1 = index / (4 * sizeof(uint));
     int pos2 = index % (4 * sizeof(uint));
 
@@ -109,17 +206,7 @@ TritSet::ProxyTritSet &TritSet::ProxyTritSet::operator=(Trit val) {
 }
 
 std::ostream& operator<<(std::ostream &os, const TritSet::ProxyTritSet &prx) {
-    switch (prx.set.getValue(prx.index)) {
-        case False:
-            os << "False";
-            break;
-        case True:
-            os << "True";
-            break;
-        default:
-            os << "Unknown";
-            break;
-    }
+    os << prx.set.getValue(prx.index);
     return os;
 }
 
@@ -138,12 +225,7 @@ bool TritSet::ProxyTritSet::operator==(const TritSet::ProxyTritSet &a) const {
 
 bool TritSet::ProxyTritSet::operator==(const Trit &a) const {
     if (index > set.size) {
-        if (a == Unknown) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return a == Unknown;
     }
     return (set.getValue(index) == a);
 }
@@ -162,25 +244,24 @@ std::ostream& operator<<(std::ostream& os, const TritSet &set) {
 }
 
 TritSet operator~ (const TritSet &a) {
-    TritSet b (a.getSize());
+    TritSet res (a.getSize());
 
-    for (int i = 0; i < a.capacity(); ++i) {
+    for (int i = 0; i < a.getVecSize(); ++i) {
         if (a.at(i) == 0) continue;
 
         int first_i = i * 4 * sizeof(uint);
         int last_i = (i + 1) * 4 * sizeof(uint);
 
         for (int j = first_i; j < last_i; ++j) {
-            b[j] = ~a.getValue(j);
+            res[j] = ~a.getValue(j);
         }
     }
-
-    return b;
+    return res;
 }
 
 TritSet operator& (const TritSet &a, const TritSet &b) {
     TritSet res (std::max(a.getSize(), b.getSize()));
-    for (int i = 0; i < std::max (a.capacity(), b.capacity()); ++i) {
+    for (int i = 0; i < std::max (a.getVecSize(), b.getVecSize()); ++i) {
         if (a.at(i) == 0 && b.at(i) == 0) {
             continue;
         }
@@ -189,45 +270,25 @@ TritSet operator& (const TritSet &a, const TritSet &b) {
         int last_i = (i + 1) * 4 * sizeof(uint);
 
         for (int j = first_i; j < last_i; ++j) {
-            if (j > std::min(a.getSize(), b.getSize())) {
-                if (a.getSize() > b.getSize()) {
-                    res[j] = b.getValue(j) & Unknown;
-                }
-                else {
-                    res[j] = a.getValue(j) & Unknown;
-                }
-            }
-            else {
-                res[j] = a.getValue(j) & b.getValue(j);
-            }
+            res[j] = a.getValue(j) & b.getValue(j);
         }
-        return res;
     }
+    return res;
 }
 
 TritSet operator| (const TritSet &a, const TritSet &b) {
     TritSet res (std::max(a.getSize(), b.getSize()));
-    for (int i = 0; i < std::max (a.capacity(), b.capacity()); ++i) {
-        if (a.getSize() > b.getSize()) {
-
+    for (int i = 0; i < std::max (a.getVecSize(), b.getVecSize()); ++i) {
+        if (a.at(i) == 0 && b.at(i) == 0) {
+            continue;
         }
 
         int first_i = i * 4 * sizeof(uint);
         int last_i = (i + 1) * 4 * sizeof(uint);
 
         for (int j = first_i; j < last_i; ++j) {
-            if (j > std::min(a.getSize(), b.getSize())) {
-                if (a.getSize() > b.getSize()) {
-                    res[j] = b.getValue(j) | Unknown;
-                }
-                else {
-                    res[j] = a.getValue(j) & Unknown;
-                }
-            }
-            else {
-                res[j] = a.getValue(j) & b.getValue(j);
-            }
+            res[j] = a.getValue(j) | b.getValue(j);
         }
-        return res;
     }
+    return res;
 }
