@@ -8,8 +8,9 @@
 class TritSet {
 public:
 
-    /*Конструктор*/
+    /*Конструкторы*/
     explicit TritSet (int _size);
+    explicit TritSet ();
 
     /*Деструктор*/
     ~TritSet();
@@ -66,9 +67,12 @@ public:
     /*Оператор обращения по индексу*/
     ProxyTritSet operator[] (int _index);
 
+    TritSet& operator= (const TritSet &a);
+
+
 private:
     /*Вектор uint*/
-    std::vector <uint> *vec;
+    std::vector <uint> vec;
 
     /*Храним первоначальный размер сета для функции shrink*/
     size_t first_size;

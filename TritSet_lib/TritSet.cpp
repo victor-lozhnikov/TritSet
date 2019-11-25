@@ -9,21 +9,26 @@
 #define UNKNOWN 0
 
 TritSet::TritSet (int _size) {
-    vec = new std::vector <uint> (ceil((double)_size / (4 * sizeof(uint))), 0);
+    vec.assign(ceil((double)_size / (4 * sizeof(uint))), 0);
     size = _size;
-    first_size = vec->size();
+    first_size = vec.size();
     trueCount = 0;
     falseCount = 0;
 }
 
-
-TritSet::~TritSet() {
-    delete vec;
+TritSet::TritSet() {
+    size = 0;
+    first_size = 0;
+    trueCount = 0;
+    falseCount = 0;
 }
 
+TritSet::~TritSet() {
+    std::vector <uint>().swap(vec);
+}
 
 size_t TritSet::capacity() const {
-    return vec->capacity();
+    return vec.capacity();
 }
 
 
@@ -33,7 +38,7 @@ size_t TritSet::getSize() const {
 
 
 size_t TritSet::getVecSize() const {
-    return vec->size();
+    return vec.size();
 }
 
 
@@ -44,7 +49,7 @@ Trit TritSet::getValue(int index) const {
     int pos1 = index / (4 * sizeof(uint));
     int pos2 = index % (4 * sizeof(uint));
 
-    uint tmp = (*vec)[pos1];
+    uint tmp = vec[pos1];
     tmp >>= 2 * pos2;
     tmp &= 3;
     switch (tmp) {
@@ -59,22 +64,22 @@ Trit TritSet::getValue(int index) const {
 
 
 uint TritSet::at (int index) const {
-    if (index >= vec->size()) {
+    if (index >= vec.size()) {
         return 0;
     }
-    return vec->at(index);
+    return vec[index];
 }
 
 
 void TritSet::shrink() {
     int new_size = first_size;
-    for (int k = vec->size() - 1; k > first_size; --k) {
-        if (vec->at(k) > 0) {
+    for (int k = vec.size() - 1; k > first_size; --k) {
+        if (vec[k] > 0) {
             new_size = k + 1;
             break;
         }
     }
-    vec->resize(new_size);
+    vec.resize(new_size);
 
     int first_i = 4 * sizeof(uint) * (new_size - 1);
     int last_i = 4 * sizeof(uint) * new_size;
@@ -83,7 +88,7 @@ void TritSet::shrink() {
             size = i + 1;
         }
     }
-    vec->shrink_to_fit();
+    vec.shrink_to_fit();
 }
 
 
@@ -118,15 +123,15 @@ void TritSet::trim(size_t lastIndex) {
     for (int i = lastIndex; i < pos1; ++i) {
         setValue(i, Unknown);
     }
-    vec->resize(new_size);
+    vec.resize(new_size);
     size = lastIndex + 1;
-    vec->shrink_to_fit();
+    vec.shrink_to_fit();
 }
 
 size_t TritSet::length() {
     int last_ind = -1;
     for (int i = getVecSize() - 1; i >= 0; --i) {
-        if (vec->at(i) != 0) {
+        if (vec[i] != 0) {
             last_ind = i;
             break;
         }
@@ -143,6 +148,7 @@ size_t TritSet::length() {
             return i + 1;
         }
     }
+    return 0;
 }
 
 void TritSet::setValue(int index, Trit val) {
@@ -184,25 +190,26 @@ void TritSet::setValue(int index, Trit val) {
             tmp2 = UNKNOWN;
             break;
     }
-
     tmp1 <<= 2 * pos2;
     tmp2 <<= 2 * pos2;
     tmp1 = ~tmp1;
-    (*vec)[pos1] &= tmp1;
-    (*vec)[pos1] |= tmp2;
+    vec[pos1] &= tmp1;
+    vec[pos1] |= tmp2;
 }
 
 TritSet::ProxyTritSet::ProxyTritSet(TritSet *_set, int _index) : set(*_set), index(_index) {}
 
 TritSet::ProxyTritSet &TritSet::ProxyTritSet::operator=(Trit val) {
-    if (index < set.size) {
-        set.setValue(index, val);
-    }
-    else if (val != Unknown) {
-        set.vec->resize(ceil((double)(index + 1) / (4 * sizeof(uint))), 0);
+    if (set.vec.size() < ceil((double)(index + 1) / (4 * sizeof(uint))) && val != Unknown) {
+        set.vec.resize(ceil((double)(index + 1) / (4 * sizeof(uint))), 0);
         set.size = index + 1;
-        set.setValue(index, val);
     }
+    else if (index >= set.size && val != Unknown) {
+        set.size = index + 1;
+    }
+
+    set.setValue(index, val);
+    return *this;
 }
 
 std::ostream& operator<<(std::ostream &os, const TritSet::ProxyTritSet &prx) {
@@ -241,6 +248,14 @@ std::ostream& operator<<(std::ostream& os, const TritSet &set) {
     }
     os << "]\n";
     return os;
+}
+
+TritSet& TritSet::operator=(const TritSet &a) {
+    vec = a.vec;
+    size = a.size;
+    trueCount = a.trueCount;
+    falseCount = a.falseCount;
+    return *this;
 }
 
 TritSet operator~ (const TritSet &a) {
