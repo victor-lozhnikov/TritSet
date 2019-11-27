@@ -212,11 +212,6 @@ TritSet::ProxyTritSet &TritSet::ProxyTritSet::operator=(Trit val) {
     return *this;
 }
 
-std::ostream& operator<<(std::ostream &os, const TritSet::ProxyTritSet &prx) {
-    os << prx.set.getValue(prx.index);
-    return os;
-}
-
 bool TritSet::ProxyTritSet::operator==(const TritSet::ProxyTritSet &a) const {
     if (index < set.size && a.index < a.set.size) {
         return (set.getValue(index) == a.set.getValue(a.index));
@@ -228,6 +223,10 @@ bool TritSet::ProxyTritSet::operator==(const TritSet::ProxyTritSet &a) const {
         return true;
     }
     return false;
+}
+
+TritSet::ProxyTritSet::operator Trit() {
+    return this->set.getValue(this->index);
 }
 
 bool TritSet::ProxyTritSet::operator==(const Trit &a) const {

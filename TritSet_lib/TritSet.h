@@ -45,6 +45,9 @@ public:
     /*Возвращаем индекс последнего не Unknown трита + 1*/
     size_t length();
 
+    //Trit &operator[] (int _index) const;
+
+private:
     /*Прокси-класс, необходимый для перегрузки операторов при обращении по индексу*/
     class ProxyTritSet {
         friend class TritSet;
@@ -56,17 +59,19 @@ public:
         /*Оператор присваивания по индексу*/
         ProxyTritSet &operator= (Trit val);
 
-        /*Оператор вывода трита*/
-        friend std::ostream& operator<<(std::ostream& os, const ProxyTritSet &prx);
-
         /*Операторы сравнения*/
         bool operator== (const ProxyTritSet &a) const;
         bool operator== (const Trit &a) const;
+
+        /*Оператор неявного приведения прокси-класса к типу Trit*/
+        operator Trit ();
     };
 
+public:
     /*Оператор обращения по индексу*/
     ProxyTritSet operator[] (int _index);
 
+    /*Оператор присваивания между тритсетами*/
     TritSet& operator= (const TritSet &a);
 
 

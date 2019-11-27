@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "TritSet.h"
 
-TEST(Tests, Test1) {
+TEST(Tests, Capacity_Test) {
     TritSet set (1000);
     int capacity = set.capacity();
     set[0] = True;
@@ -16,7 +16,7 @@ TEST(Tests, Test1) {
     EXPECT_EQ(set.capacity(), capacity);
 }
 
-TEST(Tests, Test2) {
+TEST(Tests, Shrink_Test) {
     TritSet set (10);
     int capacity = set.capacity();
     set[100] = True;
@@ -33,7 +33,7 @@ TEST(Tests, Test2) {
     EXPECT_EQ(set.capacity(), capacity);
 }
 
-TEST(Tests, Test3) {
+TEST(Tests, And_Test) {
     TritSet a(10);
     a[0] = True;
     a[1] = False;
@@ -62,7 +62,7 @@ TEST(Tests, Test3) {
     EXPECT_EQ(c[22], Unknown);
 }
 
-TEST(Tests, Test4) {
+TEST(Tests, Or_Test) {
     TritSet a(10);
     a[0] = True;
     a[1] = False;
@@ -91,7 +91,7 @@ TEST(Tests, Test4) {
     EXPECT_EQ(c[22], Unknown);
 }
 
-TEST(Tests, Test5) {
+TEST(Tests, Not_Test) {
     TritSet a(3);
     a[0] = True;
     a[1] = False;
@@ -101,7 +101,7 @@ TEST(Tests, Test5) {
     EXPECT_EQ(a[2], Unknown);
 }
 
-TEST(Tests, Test6) {
+TEST(Tests, Cardinality_Test) {
     TritSet a(10);
     a[0] = True;
     a[1] = False;
@@ -116,7 +116,7 @@ TEST(Tests, Test6) {
     EXPECT_EQ(a.cardinality()[Unknown], a.cardinality(Unknown));
 }
 
-TEST(Tests, Test7) {
+TEST(Tests, Trim_Test) {
     TritSet a(100);
     int capacity = a.capacity();
     EXPECT_EQ(a.length(), 0);
@@ -127,7 +127,7 @@ TEST(Tests, Test7) {
     EXPECT_EQ(a.capacity(), capacity);
 }
 
-TEST(Tests, Test8) {
+TEST(Tests, Shrink_Test_2) {
     TritSet a(100);
     TritSet b;
     b = a;
@@ -140,19 +140,39 @@ TEST(Tests, Test8) {
     EXPECT_EQ(c.capacity(), a.capacity());
 }
 
-TEST(Tests, Test9) {
+TEST(Tests, Big_Test) {
     TritSet a;
-    for (int i = 0; i < 100'000'000; ++i) {
-        if (i % 2 == 0) {
+    for (int i = 0; i < 99'999'999; ++i) {
+        if (i % 3 == 1) {
             a[i] = True;
         }
-        else {
+        else if (i % 3 == 2) {
             a[i] = False;
         }
     }
-    EXPECT_EQ(a.cardinality(True), 50'000'000);
-    EXPECT_EQ(a.cardinality(False), 50'000'000);
-    EXPECT_EQ(a.cardinality(Unknown), 0);
+    for (int i = 0; i < 99'999'999; ++i) {
+        if (i % 3 == 1) {
+            EXPECT_EQ(a[i], True);
+        }
+        else if (i % 3 == 2) {
+            EXPECT_EQ(a[i], False);
+        }
+        else {
+            EXPECT_EQ(a[i], Unknown);
+        }
+    }
+    EXPECT_EQ(a.cardinality(True), 33'333'333);
+    EXPECT_EQ(a.cardinality(False), 33'333'333);
+    EXPECT_EQ(a.cardinality(Unknown), 33'333'333);
+}
+
+TEST(Tests, New_Test) {
+    TritSet a, b;
+    a[5] = True;
+    b[5] = True;
+    a[4] = False;
+    b[4] = True;
+    EXPECT_EQ(a[5], b[5]);
 }
 
 int main (int argc, char **argv) {
